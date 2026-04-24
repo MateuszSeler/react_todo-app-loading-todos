@@ -49,6 +49,9 @@ export const App: React.FC = () => {
   const [loadedTodosIds, setLoadedTodosIds] = useState<Set<number>>(new Set());
 
   const todosToDo: number = todos.filter(strategy[Filter.ACTIVE]).length;
+  const todosCompleted: number = todos.filter(
+    strategy[Filter.COMPLETED],
+  ).length;
 
   const loadTodos = async () => {
     const todosList = await getTodos();
@@ -116,29 +119,29 @@ export const App: React.FC = () => {
     }
 
     createTodo(newTodoRequest)
-      .catch(e => {
+      .catch(() => {
         setError(ErrorType.ADDING);
-        throw e;
       })
       .then(loadTodos)
-      .catch(e => {
-        setError(ErrorType.LOADING);
-        throw e;
+      .then(data => {
+        applyTodos(data);
+        clearInput();
       })
-      .then(applyTodos)
-      .then(clearInput)
+      .catch(() => {
+        setError(ErrorType.LOADING);
+      })
       .finally(() => setIsLoaded(true));
   };
 
   const todosToPresent = todos.filter(strategy[filter]);
 
-  const handleFilterChoise = (value: string) => {
+  const handleFilterChoice = (value: string) => {
     if (isFilter(value)) {
       setFilter(value);
     }
   };
 
-  const handelErrorExit = () => {
+  const handleErrorExit = () => {
     setError(ErrorType.NON);
   };
 
@@ -178,7 +181,7 @@ export const App: React.FC = () => {
         {todos.length !== 0 ? (
           <footer className="todoapp__footer" data-cy="Footer">
             <span className="todo-count" data-cy="TodosCounter">
-              {todosToDo + ' items left'}
+              {todosToDo === 1 ? '1 item left' : `${todosToDo} items left`}
             </span>
 
             {/* Active link should have the 'selected' class */}
@@ -189,7 +192,10 @@ export const App: React.FC = () => {
                   'filter__link' + (filter === Filter.ALL ? ' selected' : '')
                 }
                 data-cy="FilterLinkAll"
-                onClick={() => handleFilterChoise('all')}
+                onClick={choise => {
+                  choise.preventDefault();
+                  handleFilterChoice('all');
+                }}
               >
                 All
               </a>
@@ -200,7 +206,10 @@ export const App: React.FC = () => {
                   'filter__link' + (filter === Filter.ACTIVE ? ' selected' : '')
                 }
                 data-cy="FilterLinkActive"
-                onClick={() => handleFilterChoise('active')}
+                onClick={choise => {
+                  choise.preventDefault();
+                  handleFilterChoice('active');
+                }}
               >
                 Active
               </a>
@@ -212,7 +221,10 @@ export const App: React.FC = () => {
                   (filter === Filter.COMPLETED ? ' selected' : '')
                 }
                 data-cy="FilterLinkCompleted"
-                onClick={() => handleFilterChoise('completed')}
+                onClick={choise => {
+                  choise.preventDefault();
+                  handleFilterChoice('completed');
+                }}
               >
                 Completed
               </a>
@@ -221,7 +233,10 @@ export const App: React.FC = () => {
             {/* this button should be disabled if there are no completed todos */}
             <button
               type="button"
-              className="todoapp__clear-completed"
+              className={
+                'todoapp__clear-completed' +
+                (todosCompleted === 0 ? ' disabled' : '')
+              }
               data-cy="ClearCompletedButton"
             >
               Clear completed
@@ -246,7 +261,7 @@ export const App: React.FC = () => {
           data-cy="HideErrorButton"
           type="button"
           className="delete"
-          onClick={handelErrorExit}
+          onClick={handleErrorExit}
         />
         {/* show only one message at a time */}
       </div>
